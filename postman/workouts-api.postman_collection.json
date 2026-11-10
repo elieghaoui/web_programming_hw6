@@ -1,0 +1,252 @@
+{
+  "info": {
+    "name": "Workouts API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Create workout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('has an _id', () => pm.expect(body._id).to.be.a('string'));",
+              "pm.collectionVariables.set('id', body._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Leg day\",\n  \"duration\": 45,\n  \"notes\": \"squats and lunges\"\n}"
+        },
+        "url": "{{baseUrl}}/workouts"
+      }
+    },
+    {
+      "name": "Get all workouts",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('returns an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{baseUrl}}/workouts" }
+    },
+    {
+      "name": "Search workouts",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('only matching titles', () => {",
+              "  pm.response.json().forEach(w => pm.expect(w.title.toLowerCase()).to.include('leg'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{baseUrl}}/workouts?search=leg" }
+    },
+    {
+      "name": "Get one workout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('right workout', () => pm.expect(pm.response.json()._id).to.eql(pm.collectionVariables.get('id')));"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{baseUrl}}/workouts/{{id}}" }
+    },
+    {
+      "name": "Update workout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('was updated', () => pm.expect(pm.response.json().duration).to.eql(60));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Leg day (heavy)\",\n  \"duration\": 60,\n  \"notes\": \"added deadlifts\"\n}"
+        },
+        "url": "{{baseUrl}}/workouts/{{id}}"
+      }
+    },
+    {
+      "name": "Delete workout",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+          }
+        }
+      ],
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/workouts/{{id}}" }
+    },
+    {
+      "name": "Errors",
+      "item": [
+        {
+          "name": "Get deleted workout (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));",
+                  "pm.test('error message', () => pm.expect(pm.response.json().error).to.eql('Workout not found'));"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/workouts/{{id}}" }
+        },
+        {
+          "name": "Bad id (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('error message', () => pm.expect(pm.response.json().error).to.eql('Invalid id'));"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/workouts/abc123" }
+        },
+        {
+          "name": "Create without title (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('error message', () => pm.expect(pm.response.json().error).to.eql('title is required'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"duration\": 30\n}" },
+            "url": "{{baseUrl}}/workouts"
+          }
+        },
+        {
+          "name": "Create with bad duration (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('400 Bad Request', () => pm.response.to.have.status(400));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Run\",\n  \"duration\": \"thirty\"\n}" },
+            "url": "{{baseUrl}}/workouts"
+          }
+        },
+        {
+          "name": "Broken JSON (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('still JSON', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"title\": \"Run\", " },
+            "url": "{{baseUrl}}/workouts"
+          }
+        },
+        {
+          "name": "Update missing workout (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Ghost\",\n  \"duration\": 10\n}" },
+            "url": "{{baseUrl}}/workouts/{{id}}"
+          }
+        },
+        {
+          "name": "Delete missing workout (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/workouts/{{id}}" }
+        },
+        {
+          "name": "Unknown route (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('404 Not Found', () => pm.response.to.have.status(404));"]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/nothing-here" }
+        }
+      ]
+    }
+  ]
+}
